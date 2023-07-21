@@ -1,5 +1,5 @@
 [package]
-name = "realworld-axum-sqlx"
+name = "axum_sqlx_jwt"
 version = "0.1.0"
 edition = "2021"
 publish = false
@@ -23,15 +23,15 @@ clap = { version = "4.0.0", features = ["derive", "env"] }
 serde = { version = "1.0.130", features = ["derive"] }
 
 # State of the art password hashing.
-argon2 = "0.3.1"
+argon2 = "0.5"
 
 # axum builds on the types in Tower
 tower = "0.4.11"
-tower-http = { version = "0.3.0", features = ["trace"] }
+tower-http = { version = "0.4", features = ["trace"] }
 
-jwt = "0.15.0"
-hmac = "0.11.0"
-sha2 = "0.9.8"
+jwt = "0.16"
+hmac = "0.12"
+sha2 = "0.10"
 
 time = "0.3"
 
@@ -40,9 +40,9 @@ uuid = { version = "1.0", features = ["serde"] }
 # Utility Crates
 anyhow = "1.0.48"
 async-trait = "0.1.51"
-dotenv = "0.15.0"
-env_logger = "0.9.0"
-itertools = "0.10.1"
+dotenvy = "0.15"
+env_logger = "0.10"
+itertools = "0.11"
 log = "0.4.14"
 rand = "0.8.4"
 thiserror = "1.0.30"

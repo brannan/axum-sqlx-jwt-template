@@ -10,6 +10,13 @@ best practices might look like.
 
 Feedback is appreciated!
 
+## This is a fork of a fork!
+
+I fixed some compilation errors stemming from library updates. Note that I couldn't make it work with sqlx 7.
+HTTP port was made configurable.
+
+A models module was created and database logic moved there.
+
 ## This is a fork!
 
 Note that this repo is a fork of https://github.com/launchbadge/realworld-axum-sqlx that has been updated to the
