@@ -1,5 +1,5 @@
 use crate::http::extractor::{AuthUser, MaybeAuthUser};
-use crate::http::profiles::Profile;
+use crate::models::profile::Profile;
 use crate::http::types::Timestamptz;
 use crate::http::ApiContext;
 use crate::http::{Error, Result};
