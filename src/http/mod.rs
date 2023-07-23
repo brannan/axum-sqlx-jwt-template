@@ -1,4 +1,5 @@
 use crate::config::Config;
+use crate::models::Store;
 use anyhow::Context;
 use axum::Router;
 use sqlx::PgPool;
@@ -58,12 +59,16 @@ use tower_http::trace::TraceLayer;
 pub(crate) struct ApiContext {
     config: Arc<Config>,
     db: PgPool,
+    store: Store,
 }
 
 pub async fn serve(config: Config, db: PgPool) -> anyhow::Result<()> {
+    let port = config.port;
+    let store = Store::new(db.clone());
     let api_context = ApiContext {
         config: Arc::new(config),
-        db,
+        db, // TODO Phase this out.
+        store,
     };
 
     // Bootstrapping an API is both more intuitive with Axum than Actix-web but also
@@ -81,7 +86,7 @@ pub async fn serve(config: Config, db: PgPool) -> anyhow::Result<()> {
     //
     // Note that any port below 1024 needs superuser privileges to bind on Linux,
     // so 80 isn't usually used as a default for that reason.
-    let addr = SocketAddr::from((Ipv4Addr::UNSPECIFIED, 8080));
+    let addr = SocketAddr::from((Ipv4Addr::UNSPECIFIED, port));
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .await

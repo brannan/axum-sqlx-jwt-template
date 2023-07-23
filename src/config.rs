@@ -24,4 +24,7 @@ pub struct Config {
     /// In practice, it should be a long, random string that would be infeasible to brute-force.
     #[clap(long, env)]
     pub hmac_key: String,
+
+    #[clap(long, env)]
+    pub port: u16,
 }

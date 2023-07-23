@@ -13,3 +13,5 @@ pub mod config;
 ///
 /// The Realworld API routes exist in child modules of this.
 pub mod http;
+
+pub mod models;

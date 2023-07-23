@@ -1,4 +1,5 @@
 use crate::http::{ApiContext, Result};
+use crate::models::user::{LoginUser, NewUser, UpdateUser};
 use anyhow::Context;
 use argon2::password_hash::SaltString;
 use argon2::{Argon2, PasswordHash};
@@ -24,31 +25,8 @@ struct UserBody<T> {
     user: T,
 }
 
-#[derive(serde::Deserialize)]
-struct NewUser {
-    username: String,
-    email: String,
-    password: String,
-}
-
-#[derive(serde::Deserialize)]
-struct LoginUser {
-    email: String,
-    password: String,
-}
-
-#[derive(serde::Deserialize, Default, PartialEq, Eq)]
-#[serde(default)] // fill in any missing fields with `..UpdateUser::default()`
-struct UpdateUser {
-    email: Option<String>,
-    username: Option<String>,
-    password: Option<String>,
-    bio: Option<String>,
-    image: Option<String>,
-}
-
 #[derive(serde::Serialize, serde::Deserialize)]
-struct User {
+struct UserWithToken {
     email: String,
     token: String,
     username: String,
@@ -60,35 +38,27 @@ struct User {
 async fn create_user(
     ctx: State<ApiContext>,
     Json(req): Json<UserBody<NewUser>>,
-) -> Result<Json<UserBody<User>>> {
-    let password_hash = hash_password(req.user.password).await?;
-
-    // I personally prefer using queries inline in request handlers as it's easier to understand the
-    // query's semantics in the wider context of where it's invoked.
-    //
-    // Sometimes queries just get too darn big, though. In that case it may be a good idea
-    // to move the query to a separate module.
-    let user_id = sqlx::query_scalar!(
-        // language=PostgreSQL
-        r#"insert into "user" (username, email, password_hash) values ($1, $2, $3) returning user_id"#,
-        req.user.username,
-        req.user.email,
-        password_hash
-    )
-    .fetch_one(&ctx.db)
-    .await
-    .on_constraint("user_username_key", |_| {
-        Error::unprocessable_entity([("username", "username taken")])
-    })
-    .on_constraint("user_email_key", |_| {
-        Error::unprocessable_entity([("email", "email taken")])
-    })?;
+) -> Result<Json<UserBody<UserWithToken>>> {
+    let user = ctx
+        .store
+        .user
+        .create_user(req.user)
+        .await
+        .on_constraint("user_username_key", |_| {
+            Error::unprocessable_entity([("username", "username taken")])
+        })
+        .on_constraint("user_email_key", |_| {
+            Error::unprocessable_entity([("email", "email taken")])
+        })?;
 
     Ok(Json(UserBody {
-        user: User {
-            email: req.user.email,
-            token: AuthUser { user_id }.to_jwt(&ctx),
-            username: req.user.username,
+        user: UserWithToken {
+            email: user.email,
+            token: AuthUser {
+                user_id: user.user_id,
+            }
+            .to_jwt(&ctx),
+            username: user.username.clone(),
             bio: "".to_string(),
             image: None,
         },
@@ -99,22 +69,18 @@ async fn create_user(
 async fn login_user(
     ctx: State<ApiContext>,
     Json(req): Json<UserBody<LoginUser>>,
-) -> Result<Json<UserBody<User>>> {
-    let user = sqlx::query!(
-        r#"
-            select user_id, email, username, bio, image, password_hash 
-            from "user" where email = $1
-        "#,
-        req.user.email,
-    )
-    .fetch_optional(&ctx.db)
-    .await?
-    .ok_or_else(|| Error::unprocessable_entity([("email", "does not exist")]))?;
+) -> Result<Json<UserBody<UserWithToken>>> {
+    let user = ctx
+        .store
+        .user
+        .user_by_email(&req.user.email)
+        .await
+        .or(Err(Error::NotFound))?;
 
     verify_password(req.user.password, user.password_hash).await?;
 
     Ok(Json(UserBody {
-        user: User {
+        user: UserWithToken {
             email: user.email,
             token: AuthUser {
                 user_id: user.user_id,
@@ -131,16 +97,16 @@ async fn login_user(
 async fn get_current_user(
     auth_user: AuthUser,
     ctx: State<ApiContext>,
-) -> Result<Json<UserBody<User>>> {
-    let user = sqlx::query!(
-        r#"select email, username, bio, image from "user" where user_id = $1"#,
-        auth_user.user_id
-    )
-    .fetch_one(&ctx.db)
-    .await?;
+) -> Result<Json<UserBody<UserWithToken>>> {
+    let user = ctx
+        .store
+        .user
+        .user_by_id(&auth_user.user_id)
+        .await
+        .or(Err(Error::NotFound))?;
 
     Ok(Json(UserBody {
-        user: User {
+        user: UserWithToken {
             email: user.email,
             // The spec doesn't state whether we're supposed to return the same token we were passed,
             // or generate a new one. Generating a new one is easier the way the code is structured.
@@ -162,50 +128,33 @@ async fn update_user(
     auth_user: AuthUser,
     ctx: State<ApiContext>,
     Json(req): Json<UserBody<UpdateUser>>,
-) -> Result<Json<UserBody<User>>> {
+) -> Result<Json<UserBody<UserWithToken>>> {
     if req.user == UpdateUser::default() {
         // If there's no fields to update, these two routes are effectively identical.
         return get_current_user(auth_user, ctx).await;
     }
 
     // WTB `Option::map_async()`
-    let password_hash = if let Some(password) = req.user.password {
+    let password_hash = if let Some(password) = req.user.password.clone() {
         Some(hash_password(password).await?)
     } else {
         None
     };
 
-    let user = sqlx::query!(
-        // This is how we do optional updates of fields without needing a separate query for each.
-        // language=PostgreSQL
-        r#"
-            update "user"
-            set email = coalesce($1, "user".email),
-                username = coalesce($2, "user".username),
-                password_hash = coalesce($3, "user".password_hash),
-                bio = coalesce($4, "user".bio),
-                image = coalesce($5, "user".image)
-            where user_id = $6
-            returning email, username, bio, image
-        "#,
-        req.user.email,
-        req.user.username,
-        password_hash,
-        req.user.bio,
-        req.user.image,
-        auth_user.user_id
-    )
-    .fetch_one(&ctx.db)
-    .await
-    .on_constraint("user_username_key", |_| {
-        Error::unprocessable_entity([("username", "username taken")])
-    })
-    .on_constraint("user_email_key", |_| {
-        Error::unprocessable_entity([("email", "email taken")])
-    })?;
+    let user = ctx
+        .store
+        .user
+        .update_user(&auth_user.user_id, password_hash, req.user)
+        .await
+        .on_constraint("user_username_key", |_| {
+            Error::unprocessable_entity([("username", "username taken")])
+        })
+        .on_constraint("user_email_key", |_| {
+            Error::unprocessable_entity([("email", "email taken")])
+        })?;
 
     Ok(Json(UserBody {
-        user: User {
+        user: UserWithToken {
             email: user.email,
             token: auth_user.to_jwt(&ctx),
             username: user.username,
@@ -220,11 +169,9 @@ async fn hash_password(password: String) -> Result<String> {
     // so we need to do this on a blocking thread.
     tokio::task::spawn_blocking(move || -> Result<String> {
         let salt = SaltString::generate(rand::thread_rng());
-        Ok(
-            PasswordHash::generate(Argon2::default(), password, salt.as_str())
-                .map_err(|e| anyhow::anyhow!("failed to generate password hash: {}", e))?
-                .to_string(),
-        )
+        Ok(PasswordHash::generate(Argon2::default(), password, &salt)
+            .map_err(|e| anyhow::anyhow!("failed to generate password hash: {}", e))?
+            .to_string())
     })
     .await
     .context("panic in generating password hash")?
