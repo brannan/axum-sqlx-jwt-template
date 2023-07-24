@@ -8,10 +8,9 @@
 
 use anyhow::Context;
 use clap::Parser;
+use realworld_axum_sqlx::config::Config;
+use realworld_axum_sqlx::http;
 use sqlx::postgres::PgPoolOptions;
-
-use axum_sqlx_jwt::config::Config;
-use axum_sqlx_jwt::http;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

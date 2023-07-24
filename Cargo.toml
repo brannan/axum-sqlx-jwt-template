@@ -1,5 +1,5 @@
 [package]
-name = "axum_sqlx_jwt"
+name = "realworld-axum-sqlx"
 version = "0.1.0"
 edition = "2021"
 publish = false

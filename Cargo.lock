@@ -128,34 +128,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "axum_sqlx_jwt"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "argon2",
- "async-trait",
- "axum",
- "clap",
- "dotenvy",
- "env_logger",
- "futures",
- "hmac",
- "itertools 0.11.0",
- "jwt",
- "log",
- "rand",
- "serde",
- "sha2",
- "sqlx",
- "thiserror",
- "time",
- "tokio",
- "tower",
- "tower-http 0.4.3",
- "uuid",
-]
-
-[[package]]
 name = "base64"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1159,6 +1131,34 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec0be4795e2f6a28069bec0b5ff3e2ac9bafc99e6a9a7dc3547996c5c816922c"
 dependencies = [
  "getrandom",
+]
+
+[[package]]
+name = "realworld-axum-sqlx"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "argon2",
+ "async-trait",
+ "axum",
+ "clap",
+ "dotenvy",
+ "env_logger",
+ "futures",
+ "hmac",
+ "itertools 0.11.0",
+ "jwt",
+ "log",
+ "rand",
+ "serde",
+ "sha2",
+ "sqlx",
+ "thiserror",
+ "time",
+ "tokio",
+ "tower",
+ "tower-http 0.4.3",
+ "uuid",
 ]
 
 [[package]]

@@ -17,11 +17,11 @@ mod error;
 /// such as `AuthUser` which checks for the `Authorization: Token <token>` header in the request,
 /// verifies `<token>` as a JWT and checks the signature,
 /// then deserializes the information it contains.
-mod extractor;
+pub mod extractor;
 
 /// A catch-all module for other common types in the API. Arguably, the `error` and `extractor`
 /// modules could have been children of this one, but that's more of a subjective decision.
-mod types;
+pub mod types;
 
 // Modules introducing API routes. The names match the routes listed in the Realworld spec,
 // although the `articles` module also includes the `GET /api/tags` route because it touches
@@ -58,7 +58,6 @@ use tower_http::trace::TraceLayer;
 #[derive(Clone)]
 pub(crate) struct ApiContext {
     config: Arc<Config>,
-    db: PgPool,
     store: Store,
 }
 
@@ -67,7 +66,6 @@ pub async fn serve(config: Config, db: PgPool) -> anyhow::Result<()> {
     let store = Store::new(db.clone());
     let api_context = ApiContext {
         config: Arc::new(config),
-        db, // TODO Phase this out.
         store,
     };
 

@@ -1,9 +1,5 @@
-#![allow(unused)]
 use crate::http::{Error, Result, ResultExt};
-use anyhow::Context;
-use argon2::{password_hash::SaltString, Argon2, PasswordHash};
-use serde::{Deserialize, Serialize};
-use sqlx::{FromRow, PgPool};
+use sqlx::PgPool;
 use uuid::Uuid;
 
 #[derive(serde::Serialize)]
@@ -26,7 +22,11 @@ impl ProfileController {
 }
 
 impl ProfileController {
-    pub async fn get_profile_by_id(&self, user_id: Option<Uuid>, username: &str) -> Result<Profile> {
+    pub async fn get_profile_by_id(
+        &self,
+        user_id: Option<Uuid>,
+        username: &str,
+    ) -> Result<Profile> {
         let profile = sqlx::query_as!(
             Profile,
             r#"
@@ -54,7 +54,7 @@ impl ProfileController {
     /// Follow a user identified by `username`.
     pub async fn create_follow(&self, follower: &Uuid, following: &str) -> Result<Profile> {
         let mut tx = self.pool.begin().await?;
-        
+
         let user = sqlx::query!(
             r#"select user_id, username, bio, image from "user" where username = $1"#,
             following
@@ -63,7 +63,7 @@ impl ProfileController {
         .await?
         .ok_or(Error::NotFound)?;
 
-        let result = sqlx::query!(
+        sqlx::query!(
             "insert into follow(following_user_id, followed_user_id) values ($1, $2) \
              on conflict do nothing", // If the row already exists, we don't need to do anything.
             follower,
@@ -72,7 +72,7 @@ impl ProfileController {
         .execute(&mut tx)
         .await
         .on_constraint("user_cannot_follow_self", |_| Error::Forbidden)?;
-        
+
         tx.commit().await?;
 
         Ok(Profile {
