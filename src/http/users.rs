@@ -56,7 +56,7 @@ async fn create_user(
                 user_id: user.user_id,
             }
             .to_jwt(&ctx),
-            username: user.username.clone(),
+            username: user.username,
             bio: "".to_string(),
             image: None,
         },
