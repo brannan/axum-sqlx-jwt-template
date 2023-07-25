@@ -46,3 +46,9 @@ itertools = "0.11"
 log = "0.4.14"
 rand = "0.8.4"
 thiserror = "1.0.30"
+
+[dev-dependencies]
+hyper = "0.14.27"
+mockall = "0.11.4"
+rstest = "0.18.1"
+tower = "0.4.11"
