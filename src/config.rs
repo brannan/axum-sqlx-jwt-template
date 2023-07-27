@@ -13,6 +13,7 @@
 ///
 /// See `.env.sample` in the repository root for details.
 #[derive(clap::Parser)]
+#[cfg_attr(test, derive(Default))]
 pub struct Config {
     /// The connection URL for the Postgres database this application should use.
     #[clap(long, env)]

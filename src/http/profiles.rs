@@ -37,7 +37,7 @@ async fn get_user_profile(
 ) -> Result<Json<ProfileBody>> {
     let profile = ctx
         .store
-        .profile
+        .profile()
         .get_profile_by_id(maybe_auth_user.user_id(), &username)
         .await?;
 
@@ -52,7 +52,7 @@ async fn follow_user(
 ) -> Result<Json<ProfileBody>> {
     let profile = ctx
         .store
-        .profile
+        .profile()
         .create_follow(&auth_user.user_id, &username)
         .await?;
 
@@ -67,7 +67,7 @@ async fn unfollow_user(
 ) -> Result<Json<ProfileBody>> {
     let profile = ctx
         .store
-        .profile
+        .profile()
         .unfollow(&auth_user.user_id, &username)
         .await?;
 

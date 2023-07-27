@@ -53,7 +53,7 @@ async fn create_article(
 ) -> Result<Json<ArticleBody>> {
     let article = ctx
         .store
-        .article
+        .article()
         .create_article(auth_user.user_id, req.article)
         .await?;
     Ok(Json(ArticleBody { article }))
@@ -68,7 +68,7 @@ async fn update_article(
 ) -> Result<Json<ArticleBody>> {
     let article = ctx
         .store
-        .article
+        .article()
         .update_article(auth_user.user_id, &slug, req.article)
         .await?;
     Ok(Json(ArticleBody { article }))
@@ -81,7 +81,7 @@ async fn delete_article(
     Path(slug): Path<String>,
 ) -> Result<()> {
     ctx.store
-        .article
+        .article()
         .delete_article(auth_user.user_id, &slug)
         .await
 }
@@ -96,7 +96,7 @@ async fn get_article(
 ) -> Result<Json<ArticleBody>> {
     let article = ctx
         .store
-        .article
+        .article()
         .get_article(maybe_auth_user.user_id(), &slug)
         .await?;
     Ok(Json(ArticleBody { article }))
@@ -110,7 +110,7 @@ async fn favorite_article(
 ) -> Result<Json<ArticleBody>> {
     let article = ctx
         .store
-        .article
+        .article()
         .favorite_article(auth_user.user_id, &slug)
         .await?;
     Ok(Json(ArticleBody { article }))
@@ -124,7 +124,7 @@ async fn unfavorite_article(
 ) -> Result<Json<ArticleBody>> {
     let article = ctx
         .store
-        .article
+        .article()
         .unfavorite_article(auth_user.user_id, &slug)
         .await?;
     Ok(Json(ArticleBody { article }))
@@ -132,7 +132,7 @@ async fn unfavorite_article(
 
 // https://realworld-docs.netlify.app/docs/specs/backend-specs/endpoints#get-tags
 async fn get_tags(ctx: State<ApiContext>) -> Result<Json<TagsBody>> {
-    let tags = ctx.store.article.get_tags().await?;
+    let tags = ctx.store.article().get_tags().await?;
     Ok(Json(TagsBody { tags }))
 }
 

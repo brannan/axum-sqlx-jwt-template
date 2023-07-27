@@ -43,7 +43,7 @@ async fn get_article_comments(
     // With this, we can return 404 if the article slug was not found.
     let comments = ctx
         .store
-        .comment
+        .comment()
         .get_article_comments(maybe_auth_user.user_id(), &slug)
         .await?;
 
@@ -59,7 +59,7 @@ async fn add_comment(
 ) -> Result<Json<CommentBody>> {
     let comment = ctx
         .store
-        .comment
+        .comment()
         .create_comment(auth_user.user_id, &slug, &req.comment.body)
         .await?;
     Ok(Json(CommentBody { comment }))
@@ -72,7 +72,7 @@ async fn delete_comment(
     Path((slug, comment_id)): Path<(String, i64)>,
 ) -> Result<()> {
     ctx.store
-        .comment
+        .comment()
         .delete_comment(auth_user.user_id, &slug, comment_id)
         .await
 }

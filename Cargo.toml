@@ -26,7 +26,7 @@ serde = { version = "1.0.130", features = ["derive"] }
 argon2 = "0.5"
 
 # axum builds on the types in Tower
-tower = "0.4.11"
+tower = {version = "0.4", features = ["full"] }
 tower-http = { version = "0.4", features = ["trace"] }
 
 jwt = "0.16"
@@ -35,7 +35,7 @@ sha2 = "0.10"
 
 time = "0.3"
 
-uuid = { version = "1.0", features = ["serde"] }
+uuid = { version = "1.0", features = ["v4", "serde"] }
 
 # Utility Crates
 anyhow = "1.0.48"
@@ -46,9 +46,10 @@ itertools = "0.11"
 log = "0.4.14"
 rand = "0.8.4"
 thiserror = "1.0.30"
+serde_json = "1.0.103"
 
 [dev-dependencies]
-hyper = "0.14.27"
 mockall = "0.11.4"
 rstest = "0.18.1"
-tower = "0.4.11"
+tower = { version = "0.4", features = ["util"] }
+hyper = { version = "0.14", features = ["full"] }

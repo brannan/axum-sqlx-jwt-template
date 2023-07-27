@@ -42,8 +42,10 @@ struct AuthUserClaims {
 }
 
 impl AuthUser {
-    pub(in crate::http) fn to_jwt(&self, ctx: &ApiContext) -> String {
-        let hmac = Hmac::<Sha384>::new_from_slice(ctx.config.hmac_key.as_bytes())
+    /// PSB: The original app passed in an ApiContext just to get at the HMAC key.
+    /// I refactored this to pass in the HMAC key directly. This simplifies testing.
+    pub(crate) fn to_jwt(&self, hmac_key: &str) -> String {
+        let hmac = Hmac::<Sha384>::new_from_slice(hmac_key.as_bytes())
             .expect("HMAC-SHA-384 can accept any key length");
 
         AuthUserClaims {
@@ -55,7 +57,12 @@ impl AuthUser {
     }
 
     /// Attempt to parse `Self` from an `Authorization` header.
-    fn from_authorization(ctx: &ApiContext, auth_header: &HeaderValue) -> Result<Self, Error> {
+    /// PSB: The original app passed in an ApiContext just to get at the HMAC key.
+    /// I refactored this to pass in the HMAC key directly. This simplifies testing
+    pub(crate) fn from_authorization(
+        hmac_key: &str,
+        auth_header: &HeaderValue,
+    ) -> Result<Self, Error> {
         let auth_header = auth_header.to_str().map_err(|_| {
             log::debug!("Authorization header is not UTF-8");
             Error::Unauthorized
@@ -84,7 +91,7 @@ impl AuthUser {
         // Realworld doesn't specify the signing algorithm for use with the JWT tokens
         // so we picked SHA-384 (HS-384) as the HMAC, as it is more difficult to brute-force
         // than SHA-256 (recommended by the JWT spec) at the cost of a slightly larger token.
-        let hmac = Hmac::<Sha384>::new_from_slice(ctx.config.hmac_key.as_bytes())
+        let hmac = Hmac::<Sha384>::new_from_slice(hmac_key.as_bytes())
             .expect("HMAC-SHA-384 can accept any key length");
 
         // When choosing a JWT implementation, be sure to check that it validates that the signing
@@ -163,7 +170,7 @@ where
             .get(AUTHORIZATION)
             .ok_or(Error::Unauthorized)?;
 
-        Self::from_authorization(&ctx, auth_header)
+        Self::from_authorization(&ctx.config.hmac_key, auth_header)
     }
 }
 
@@ -183,7 +190,7 @@ where
             parts
                 .headers
                 .get(AUTHORIZATION)
-                .map(|auth_header| AuthUser::from_authorization(&ctx, auth_header))
+                .map(|auth_header| AuthUser::from_authorization(&ctx.config.hmac_key, auth_header))
                 .transpose()?,
         ))
     }

@@ -1,4 +1,8 @@
 use sqlx::PgPool;
+use std::sync::Arc;
+
+#[cfg(test)]
+use mockall::automock;
 
 pub mod article;
 pub mod comment;
@@ -6,30 +10,45 @@ pub mod listing;
 pub mod profile;
 pub mod user;
 
+pub type DynStore = Arc<dyn StoreTrait + Send + Sync>;
+
 #[derive(Clone)]
 pub struct Store {
     pub pool: PgPool,
-    pub user: user::UserController,
-    pub profile: profile::ProfileController,
-    pub comment: comment::CommentController,
-    pub article: article::ArticleController,
-    pub listing: listing::ListingController,
+}
+#[cfg_attr(test, automock)]
+pub trait StoreTrait {
+    fn user(&self) -> user::DynUserCtrl;
+    fn profile(&self) -> profile::ProfileController;
+    fn comment(&self) -> comment::CommentController;
+    fn article(&self) -> article::ArticleController;
+    fn listing(&self) -> listing::ListingController;
 }
 
 impl Store {
     pub fn new(pool: PgPool) -> Self {
-        let user = user::UserController::new(pool.clone());
-        let profile = profile::ProfileController::new(pool.clone());
-        let comment = comment::CommentController::new(pool.clone());
-        let article = article::ArticleController::new(pool.clone());
-        let listing = listing::ListingController::new(pool.clone());
-        Self {
-            pool,
-            user,
-            profile,
-            comment,
-            article,
-            listing,
-        }
+        Self { pool }
+    }
+}
+
+impl StoreTrait for Store {
+    fn user(&self) -> user::DynUserCtrl {
+        Arc::new(user::UserController::new(self.pool.clone())) as user::DynUserCtrl
+    }
+
+    fn profile(&self) -> profile::ProfileController {
+        profile::ProfileController::new(self.pool.clone())
+    }
+
+    fn comment(&self) -> comment::CommentController {
+        comment::CommentController::new(self.pool.clone())
+    }
+
+    fn article(&self) -> article::ArticleController {
+        article::ArticleController::new(self.pool.clone())
+    }
+
+    fn listing(&self) -> listing::ListingController {
+        listing::ListingController::new(self.pool.clone())
     }
 }

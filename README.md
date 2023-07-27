@@ -10,12 +10,25 @@ best practices might look like.
 
 Feedback is appreciated!
 
-## This is a fork of a fork!
+## This is a fork of a fork! PSB
 
 I fixed some compilation errors stemming from library updates. Note that I couldn't make it work with sqlx 7.
 HTTP port was made configurable.
 
 A models module was created and database logic moved there.
+
+My gaol is to have models separate from routing and to be able to mock the model controllers 
+for unit testing. My initial thought was to turn both the ApiController and model controllers
+into interfaces that can be mocked. I have a master Store instance provides access to all 
+model controllers via getters. 
+
+The app initialization process works like this:
+
+1. `main.js` calls `http::serve(config, db)` This is in http/mod.js.
+
+2. `serve(config, db)` creates an ApiContext and passes it to the `api_router` function. 
+   A single router, merging all routes
+
 
 ## This is a fork!
 

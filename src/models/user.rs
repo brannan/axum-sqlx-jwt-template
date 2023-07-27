@@ -1,9 +1,15 @@
+use std::sync::Arc;
+
 use crate::http::{Error, Result};
 use anyhow::Context;
 use argon2::{password_hash::SaltString, Argon2, PasswordHash};
+use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, PgPool};
 use uuid::Uuid;
+
+#[cfg(test)]
+use mockall::automock;
 
 #[derive(serde::Deserialize)]
 pub struct NewUser {
@@ -29,6 +35,7 @@ pub struct UpdateUser {
 }
 
 #[derive(Serialize, Deserialize, FromRow)]
+#[cfg_attr(test, derive(Eq, PartialEq, Debug, Clone, Default))]
 pub struct User {
     pub user_id: Uuid,
     pub email: String,
@@ -49,9 +56,25 @@ impl UserController {
     }
 }
 
-impl UserController {
-    pub async fn create_user(&self, new_user: NewUser) -> Result<User> {
-        let password_hash = hash_password(new_user.password.clone()).await?;
+pub type DynUserCtrl = Arc<dyn UserCtrlTrait + Send + Sync>;
+#[cfg_attr(test, automock)]
+#[async_trait]
+pub trait UserCtrlTrait {
+    async fn create_user(&self, new_user: NewUser) -> Result<User>;
+    async fn user_by_email(&self, email: &str) -> Result<User>;
+    async fn user_by_id(&self, user_id: &Uuid) -> Result<User>;
+    async fn update_user(
+        &self,
+        uuid: &Uuid,
+        password_hash: Option<String>,
+        update_user: UpdateUser,
+    ) -> Result<User>;
+}
+
+#[async_trait]
+impl UserCtrlTrait for UserController {
+    async fn create_user(&self, new_user: NewUser) -> Result<User> {
+        let password_hash = User::hash_password(new_user.password.clone()).await?;
 
         let user = sqlx::query_as!(
             User,
@@ -67,7 +90,7 @@ impl UserController {
         Ok(user)
     }
 
-    pub async fn user_by_email(&self, email: &str) -> Result<User> {
+    async fn user_by_email(&self, email: &str) -> Result<User> {
         let user = sqlx::query_as!(
             User,
             r#"
@@ -83,7 +106,7 @@ impl UserController {
         Ok(user)
     }
 
-    pub async fn user_by_id(&self, user_id: &Uuid) -> Result<User> {
+    async fn user_by_id(&self, user_id: &Uuid) -> Result<User> {
         let user = sqlx::query_as!(
             User,
             r#"
@@ -99,7 +122,7 @@ impl UserController {
         Ok(user)
     }
 
-    pub async fn update_user(
+    async fn update_user(
         &self,
         uuid: &Uuid,
         password_hash: Option<String>,
@@ -136,15 +159,17 @@ impl UserController {
     }
 }
 
-async fn hash_password(password: String) -> Result<String> {
-    // Argon2 hashing is designed to be computationally intensive,
-    // so we need to do this on a blocking thread.
-    tokio::task::spawn_blocking(move || -> Result<String> {
-        let salt = SaltString::generate(rand::thread_rng());
-        Ok(PasswordHash::generate(Argon2::default(), password, &salt)
-            .map_err(|e| anyhow::anyhow!("failed to generate password hash: {}", e))?
-            .to_string())
-    })
-    .await
-    .context("panic in generating password hash")?
+impl User {
+    pub(crate) async fn hash_password(password: String) -> Result<String> {
+        // Argon2 hashing is designed to be computationally intensive,
+        // so we need to do this on a blocking thread.
+        tokio::task::spawn_blocking(move || -> Result<String> {
+            let salt = SaltString::generate(rand::thread_rng());
+            Ok(PasswordHash::generate(Argon2::default(), password, &salt)
+                .map_err(|e| anyhow::anyhow!("failed to generate password hash: {}", e))?
+                .to_string())
+        })
+        .await
+        .context("panic in generating password hash")?
+    }
 }

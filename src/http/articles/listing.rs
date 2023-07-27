@@ -47,7 +47,7 @@ pub(in crate::http) async fn list_articles(
 ) -> http::Result<Json<MultipleArticlesBody>> {
     let articles = ctx
         .store
-        .listing
+        .listing()
         .article_list(maybe_auth_user.user_id(), query)
         .await?;
 
@@ -69,9 +69,9 @@ pub(in crate::http) async fn feed_articles(
     println!("feed_articles for : {:?}", auth_user.user_id);
     let articles = ctx
         .store
-        .listing
+        .listing()
         .get_feed_articles(auth_user.user_id, query)
-        .await?; 
+        .await?;
     Ok(Json(MultipleArticlesBody {
         // This is probably incorrect but is deliberate and the Postman collection allows it.
         //
