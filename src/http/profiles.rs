@@ -124,7 +124,7 @@ mod tests {
     #[tokio::test]
     async fn get_user_profile() {
         let hmac_key = "Yabba Dabba Doo!";
-        let username = "username".to_string();
+        let username = "fred".to_string();
         let auth_user = AuthUser {
             user_id: Uuid::new_v4(),
         };
@@ -145,7 +145,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::GET)
-                    .uri("/api/profiles/username")
+                    .uri(format!("/api/profiles/{}", username))
                     .header(http::header::CONTENT_TYPE, "application/json")
                     .header("Authorization", format!("Token {}", jwt))
                     .body(Body::empty())
@@ -155,7 +155,7 @@ mod tests {
             .unwrap();
         let status = response.status();
         let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
-        // println!("response: {}", String::from_utf8_lossy(&body));
+        println!("response: {}", String::from_utf8_lossy(&body));
         // response: response: {"profile":{"username":"username","bio":"example bio","image":null,"following":false}}
 
         // check if {profile: {"username"} } is username.
