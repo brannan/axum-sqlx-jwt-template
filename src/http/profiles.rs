@@ -156,7 +156,6 @@ mod tests {
         let status = response.status();
         let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
         println!("response: {}", String::from_utf8_lossy(&body));
-        // response: response: {"profile":{"username":"username","bio":"example bio","image":null,"following":false}}
 
         // check if {profile: {"username"} } is username.
         let json: Value = serde_json::from_slice(&body).unwrap();
