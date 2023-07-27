@@ -19,7 +19,7 @@ pub struct Store {
 #[cfg_attr(test, automock)]
 pub trait StoreTrait {
     fn user(&self) -> user::DynUserCtrl;
-    fn profile(&self) -> profile::ProfileController;
+    fn profile(&self) -> profile::DynProfileCtrl;
     fn comment(&self) -> comment::CommentController;
     fn article(&self) -> article::ArticleController;
     fn listing(&self) -> listing::ListingController;
@@ -36,8 +36,8 @@ impl StoreTrait for Store {
         Arc::new(user::UserController::new(self.pool.clone())) as user::DynUserCtrl
     }
 
-    fn profile(&self) -> profile::ProfileController {
-        profile::ProfileController::new(self.pool.clone())
+    fn profile(&self) -> profile::DynProfileCtrl {
+        Arc::new(profile::ProfileController::new(self.pool.clone())) as profile::DynProfileCtrl
     }
 
     fn comment(&self) -> comment::CommentController {

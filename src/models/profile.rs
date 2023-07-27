@@ -1,7 +1,13 @@
 use crate::http::{Error, Result, ResultExt};
+use async_trait::async_trait;
 use sqlx::PgPool;
 use uuid::Uuid;
+use std::sync::Arc;
 
+#[cfg(test)]
+use mockall::automock;
+
+#[cfg_attr(test, derive(Eq, PartialEq, Debug, Clone, Default))]
 #[derive(serde::Serialize)]
 pub struct Profile {
     pub username: String,
@@ -20,9 +26,19 @@ impl ProfileController {
         Self { pool }
     }
 }
+pub type DynProfileCtrl = Arc<dyn ProfileCtrlTrait + Send + Sync>;
 
-impl ProfileController {
-    pub async fn get_profile_by_id(
+#[cfg_attr(test, automock)]
+#[async_trait]
+pub trait ProfileCtrlTrait {
+    async fn get_profile_by_id(&self, user_id: Option<Uuid>, username: &str) -> Result<Profile>;
+    async fn create_follow(&self, follower: &Uuid, following: &str) -> Result<Profile>;
+    async fn unfollow(&self, follower: &Uuid, following: &str) -> Result<Profile>;
+}
+
+#[async_trait]
+impl ProfileCtrlTrait for ProfileController {
+    async fn get_profile_by_id(
         &self,
         user_id: Option<Uuid>,
         username: &str,
@@ -52,7 +68,7 @@ impl ProfileController {
     }
 
     /// Follow a user identified by `username`.
-    pub async fn create_follow(&self, follower: &Uuid, following: &str) -> Result<Profile> {
+    async fn create_follow(&self, follower: &Uuid, following: &str) -> Result<Profile> {
         let mut tx = self.pool.begin().await?;
 
         let user = sqlx::query!(
@@ -83,7 +99,7 @@ impl ProfileController {
         })
     }
 
-    pub async fn unfollow(&self, follower: &Uuid, following: &str) -> Result<Profile> {
+    async fn unfollow(&self, follower: &Uuid, following: &str) -> Result<Profile> {
         let mut tx = self.pool.begin().await?;
 
         let user = sqlx::query!(

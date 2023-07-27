@@ -1,7 +1,4 @@
-use crate::{
-    config::Config,
-    models::DynStore,
-};
+use crate::{config::Config, models::DynStore};
 use std::sync::Arc;
 /// The core type through which handler functions can access common API state.
 /// This can be accessed by adding a parameter `State<ApiContext>` to a handler function's
