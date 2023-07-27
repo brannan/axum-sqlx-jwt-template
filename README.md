@@ -17,18 +17,21 @@ HTTP port was made configurable.
 
 A models module was created and database logic moved there.
 
-My gaol is to have models separate from routing and to be able to mock the model controllers 
-for unit testing. My initial thought was to turn both the ApiController and model controllers
-into interfaces that can be mocked. I have a master Store instance provides access to all 
-model controllers via getters. 
+Logic was moved from mod.rs files into named files. I hate having an editor with multiple
+`mod.rs` tabs open.
 
-The app initialization process works like this:
+My goal is to have models separate from routing and to be able to mock the model controllers 
+for unit testing. 
 
-1. `main.js` calls `http::serve(config, db)` This is in http/mod.js.
+In light of that I have implemented a master Store trait in `src/models/mod.rs` and dyn 
+model controller traits for src/models/user.rs and src/models/profile.rs.
 
-2. `serve(config, db)` creates an ApiContext and passes it to the `api_router` function. 
-   A single router, merging all routes
+Both src/http/users.rs and src/http/profiles.rs now have unit tests. My solution seems convoluted
+and my limited rust experience may be preventing me from seeing the simple solution. 
 
+I am open to suggestions.
+
+The architecture does, nevertheless, work just fine.
 
 ## This is a fork!
 
