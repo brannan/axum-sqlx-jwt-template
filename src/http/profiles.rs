@@ -121,6 +121,7 @@ mod tests {
         mock_store
     }
 
+    // cargo watch -q -c -w src/ -x 'test --lib get_user_profile -- --nocapture'
     #[tokio::test]
     async fn get_user_profile() {
         let hmac_key = "Yabba Dabba Doo!";
@@ -162,5 +163,30 @@ mod tests {
         assert_eq!(json["profile"]["username"], username);
 
         assert_eq!(status, StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn follow_user() {
+        let mock_store = MockStoreTrait::new();
+        let mock_profile_ctrl = Arc::new(MockProfileCtrlTrait::new()) as DynProfileCtrl;
+
+        let app = Router::new()
+            .route("/api/profies/:username", get(get_user_profile))
+            .with_state(mock_profile_ctrl);
+
+        // let app = router().with_state(ApiContext {
+        //     config: Arc::new(Config::default()),
+        //     store: Arc::new(mock_store),
+        // });
+
+        // let response = app
+        // .oneshot(
+        //     Request::builder()
+        //         .method(http::Method::POST)
+        //         .uri("/api/profiles/fred/follow")
+        //         .body(Body::empty())
+        //         .unwrap(),
+        // )
+        assert_eq!(1, 1);
     }
 }
