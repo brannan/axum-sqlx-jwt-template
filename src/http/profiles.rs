@@ -38,12 +38,10 @@ async fn get_user_profile(
     //
     // See the docs for `MaybeAuthUser` for why this isn't just `Option<AuthUser>`.
     // Note: MaybeAuthUser requires an ApiContext under the hood.
-    // maybe_auth_user: MaybeAuthUser, 
+    maybe_auth_user: MaybeAuthUser, 
     profile_controller: State<DynProfileCtrl>,
     Path(username): Path<String>,
 ) -> Result<Json<ProfileBody>> {
-    // MaybeAuthUser a tuple struct wrapper around Option<AuthUser> 
-    let maybe_auth_user: MaybeAuthUser = MaybeAuthUser(None);
     let user_id: Option<Uuid> = maybe_auth_user.0.map(|auth_user| auth_user.user_id);
     let profile = profile_controller
         .get_profile_by_id(user_id, &username)
@@ -127,6 +125,7 @@ mod tests {
     }
 
     // cargo watch -q -c -w src/ -x 'test --lib get_user_profile -- --nocapture'
+    // Test the following cases: With auth user, without auth user, good and bad username
     #[tokio::test]
     async fn get_user_profile() {
         let hmac_key = "Yabba Dabba Doo!";
