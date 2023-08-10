@@ -1,8 +1,8 @@
 use crate::http::{Error, Result, ResultExt};
 use async_trait::async_trait;
 use sqlx::PgPool;
-use uuid::Uuid;
 use std::sync::Arc;
+use uuid::Uuid;
 
 #[cfg(test)]
 use mockall::automock;
@@ -38,11 +38,7 @@ pub trait ProfileCtrlTrait {
 
 #[async_trait]
 impl ProfileCtrlTrait for ProfileController {
-    async fn get_profile_by_id(
-        &self,
-        user_id: Option<Uuid>,
-        username: &str,
-    ) -> Result<Profile> {
+    async fn get_profile_by_id(&self, user_id: Option<Uuid>, username: &str) -> Result<Profile> {
         let profile = sqlx::query_as!(
             Profile,
             r#"
